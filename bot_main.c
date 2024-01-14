@@ -35,7 +35,13 @@ void dodaj(){
     player[1] = rand() % 4 + 3;
     while(player[1]  == player[0]) player[1] = rand() % 3 + 4;
 
+    //!!!!!!!!!!!!!!!!!!!
+    player[0] = 4;
+    player[1] = 4;
+    //!!!!!!!!!!!!!!!!!!!
+
     //zabawa botem
+    // cout(plansza, 9);
     while(sprawdz_wynik(nad_zwyciestwa) == ' ' && !remis(nad_zwyciestwa)){
         int next_czesc;
         if(player[idx] == 6){
@@ -54,6 +60,12 @@ void dodaj(){
         czesc = next_czesc;
         gracz = zmiana_gracza(gracz);
         idx ^= 1;
+
+        //debug
+        // printf("gracz: %c\n", gracz);
+        // cout(plansza, 9);
+        // cout(nad_zwyciestwa, 3);
+        // putchar('\n');
     }
     //wypisanie wyniku
     if(remis(nad_zwyciestwa)){
@@ -63,17 +75,17 @@ void dodaj(){
     int wynik = sprawdz_wynik(nad_zwyciestwa);
     if(wynik == 'X') fprintf(file, "%d;%d;%d\n", player[0], player[1], 0);
     else fprintf(file, "%d;%d;%d\n", player[0], player[1], 1);
+
+    deallocate(plansza, 9);
+    deallocate(nad_zwyciestwa, 3);
 }
 
 int main(){
-    //TODO dokończyć implementacje sparawdzania bota
-    //TODO dodać srand(time(NULL)); do prawdziwego maina
-    
     file = fopen("dane.csv", "w");
 
     //tworzenie planszy
     srand(time(NULL));
-    for(int i = 0; i < 100; i++)
+    for(int i = 0; i < 1; i++)
         dodaj();
     
     fclose(file);

@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "game_bot.h": "c",
+        "bot_utils.h": "c"
+    }
+}
