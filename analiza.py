@@ -1,46 +1,40 @@
-import csv
+import subprocess
+import pandas as pd
 import matplotlib.pyplot as plt
-from collections import defaultdict
-
-def analizuj_dane(plik_csv):
-    wyniki_bota = defaultdict(lambda: {'wygrane': 0, 'przegrane': 0, 'remisy': 0})
-
-    for wiersz in plik_csv:
-        typ_bota1 = wiersz[0]
-        typ_bota2 = wiersz[1]
-        wynik = int(wiersz[2])
-
-        if wynik == 0:
-            wyniki_bota[typ_bota1]['wygrane'] += 1
-            wyniki_bota[typ_bota2]['przegrane'] += 1
-        elif wynik == 1:
-            wyniki_bota[typ_bota1]['przegrane'] += 1
-            wyniki_bota[typ_bota2]['wygrane'] += 1
-        elif wynik == 2:
-            wyniki_bota[typ_bota1]['remisy'] += 1
-            wyniki_bota[typ_bota2]['remisy'] += 1
-
-    return wyniki_bota
-
-def generuj_wykresy(wyniki):
-    for typ_bota, statystyki in wyniki.items():
-        labels = ['Wygrane', 'Przegrane', 'Remisy']
-        sizes = [statystyki['wygrane'], statystyki['przegrane'], statystyki['remisy']]
-        colors = ['green', 'red', 'yellow']
-        explode = (0.1, 0, 0)
-
-        suma_partii = sum(sizes)
-
-        fig, ax = plt.subplots()
-        ax.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True, startangle=140)
-        ax.axis('equal')
-
-        plt.title(f'Statystyki dla bota {typ_bota} (Suma partii: {suma_partii})')
-        plt.savefig(f'wykres_{typ_bota}.png', bbox_inches='tight')
-        plt.close()
+import os
 
 if __name__ == "__main__":
-    with open('./dane.csv', 'r') as plik:
-        czytacz_csv = csv.reader(plik, delimiter=';')
-        wyniki = analizuj_dane(czytacz_csv)
-        generuj_wykresy(wyniki)
+    idx = 0
+    best_ratio = 0
+    best_idx = 0
+    DIFF, SELECT = 0, 2
+
+    for SQRT in (0.2, 0.4, 0.8, 1): #6
+        for WINS in (2, 3): #2
+            if(idx <= 3):
+                idx += 1
+                continue
+
+            subprocess.call(["./a.out", str(DIFF), str(SQRT), str(WINS), str(SELECT)])
+
+            df = pd.read_csv('./dane.csv', sep=';', header=None)
+            df.columns = ['bot4', 'bot5', 'wynik']
+            bot4_wins = len(df[df['wynik'] == 1])
+            bot4_losses = len(df[df['wynik'] == 0])
+            bot4_draws = len(df[df['wynik'] == 2])
+            ratio = bot4_wins / (bot4_losses + bot4_draws + 1e-7)  # avoid division by zero
+
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_idx = idx
+
+            df['wynik'].value_counts().plot(kind='pie', colors=['green', 'red', 'blue'], labels=['Wygrane', 'Przegrane', 'Remisy'], autopct='%1.1f%%')
+            plt.title(f'DIFF={DIFF}, SQRT={SQRT}, WINS={WINS}, SELECT={SELECT}, Iteracja={idx}')
+            if not os.path.exists('wykresy'):
+                os.makedirs('wykresy')
+            plt.savefig(f'wykresy/wykres_v3_{idx}.png')
+            plt.clf()
+
+            idx += 1
+
+    print(f'Bot 4 miał najlepsze statystyki wygranych do przegranych dla idx: {best_idx}')

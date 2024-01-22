@@ -3,8 +3,7 @@
     Implementacja botów o trzech stopniach trudności i w dwóch wariantach rozmiaru planszy.
 
     Bot przyjmuje argumenty:
-        - wskaźnik na planszę do gry
-        - kto wykonuje ruch: X czy O
+        - wskaźnik na gre
         - w której części ma się odbyć ruch, jeśli plansza jest 3x3 to 
             podaj argument = 0, jeśli plansza jest 9x9 to indeksuje części:
             0 | 1 | 2
@@ -30,6 +29,7 @@
 #pragma once
 #include <stdio.h>
 #include <stdlib.h>
+#include "bot_main.h"
 
 /**
  * @brief Funkcja realizująca działanie bota w grze kółko-krzyżyk.

@@ -4,11 +4,22 @@
 
 #include "game_bot.h"
 #include "bot_utils.h"
+#include "bot_main.h"
 
 #define inf 1e9
+extern int DIFF, WINS, SELECT;
+extern double SQRT;
 
 vector_node *create_vector_node(char **plnasza, int czesc){
-    vector_node *vector = malloc(sizeof(vector_node));
+    pthread_mutex_lock(&stop_malloc);
+    vector_node *vector = calloc(1, sizeof(vector_node));
+    pthread_mutex_unlock(&stop_malloc);
+
+    if(vector == NULL){
+        puts("błąd alokacji pamięci");
+        exit(EXIT_FAILURE);
+    }
+
     vector -> size = 0;
     int cnt = 0;
     pair p = poczatek_czesci(czesc);
@@ -17,7 +28,10 @@ vector_node *create_vector_node(char **plnasza, int czesc){
             if(plnasza[i + p.x][j + p.y] == ' ') cnt++;
 
     vector -> max_size = cnt;
-    vector -> sons = malloc(cnt * sizeof(node*));
+    pthread_mutex_lock(&stop_malloc);
+    vector -> sons = calloc(cnt, sizeof(node*));
+    pthread_mutex_unlock(&stop_malloc);
+
     if(vector -> sons == NULL){
         puts("błąd alokacji pamięci");
         exit(EXIT_FAILURE);
@@ -30,13 +44,19 @@ vector_node *create_vector_node(char **plnasza, int czesc){
 }
 
 node *create_node(char **plansza, int czesc){
-    node *wierzcholek = malloc(sizeof(node));
+    pthread_mutex_lock(&stop_malloc);
+    node *wierzcholek = calloc(1, sizeof(node));
+    pthread_mutex_unlock(&stop_malloc);
+
     if(wierzcholek == NULL){
         puts("błąd alokacji pamięci");
         exit(EXIT_FAILURE);
     }
 
-    pthread_mutex_t *mutex = malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_lock(&stop_malloc);
+    pthread_mutex_t *mutex = calloc(1, sizeof(pthread_mutex_t));
+    pthread_mutex_unlock(&stop_malloc);
+
     if(mutex == NULL){
         puts("błąd alokajic pamięci");
         exit(EXIT_FAILURE);
@@ -69,13 +89,14 @@ void destruct_node(node *NODE){
 
     pthread_mutex_destroy(NODE -> mutex);
     free(NODE -> mutex);
-
+    
     free(NODE);
 }
 
 void destruct_vector_node(vector_node *vector){
     for(int i = 0; i < vector -> size; i++)
-        destruct_node(vector -> sons[i]);
+        if(vector -> sons[i] != NULL)
+            destruct_node(vector -> sons[i]);
 
     free(vector -> sons);
     free(vector);
@@ -89,8 +110,12 @@ double uct(node *wierzcholek){
     if(wierzcholek -> visit == 0) return (double) inf;
 
     double uct = (double) wierzcholek -> wins / wierzcholek -> visit;
-    uct += (double) sqrt(2) * sqrt(log(wierzcholek -> parent == NULL ? wierzcholek -> visit :
+    uct += (double) sqrt(SQRT) * sqrt(log(wierzcholek -> parent == NULL ? wierzcholek -> visit :
         wierzcholek -> parent -> visit) / wierzcholek -> visit);
+    if(DIFF){
+        uct += (double) 1 / (rand() % 45 + 5);
+    }
+
     return uct;
 }
 
@@ -291,10 +316,6 @@ int dodaj_syna(choosen_node *cn, char **plansza, char **nad_zwyciestwa){
     new_node -> ruch = ruch;
     push_back(cn, new_node);
 
-    if(cn -> v != new_node -> parent){
-        puts("dkjfkd");
-    }
-
     //zmiana planszy pod new_node
     // plansza[new_node -> ruch.x][new_node -> ruch.y] = new_node -> ruch.gracz;
     // update_nad_zwyciestwa(plansza, nad_zwyciestwa, cn -> v -> ruch.czesc); 
@@ -312,7 +333,7 @@ int remis(char **nad_zwyciestwa){
     return 1;
 }
 
-// 0: gracz przegrał, 1: gracz zremisował, 2: gracz wygrał
+// 0: gracz przegrał, 1: gracz zremisował, WINS: gracz wygrał
 int symulate(node *v, char **plansza, char **nad_zywciestwa, char gracz){
     char **matrix = allocate(9);
     for(int i = 0; i < 9; i++)
@@ -369,7 +390,7 @@ int symulate(node *v, char **plansza, char **nad_zywciestwa, char gracz){
         return 1;
     }
 
-    int wynik = 3 * (sprawdz_wynik(wyniki_pol) == gracz);
+    int wynik = WINS * (sprawdz_wynik(wyniki_pol) == gracz);
     deallocate(wyniki_pol, 3);
     deallocate(matrix, 9);
 
@@ -399,12 +420,34 @@ zmiana znajdz_opt(node *v){
         return ruch;
     }
 
-    int best_score = 0;
     int best_idx = 0;
-    for(int i = 0; i < v -> vec -> size; i++){
-        if(v -> vec -> sons[i] -> visit > best_score){
-            best_score = v -> vec -> sons[i] -> visit;
-            best_idx = i;
+    //wins / visit
+    if(SELECT == 0){
+        double best_score = 0;
+        for(int i = 0; i < v -> vec -> size; i++){
+            if((double ) v -> vec -> sons[i] -> wins /  v -> vec -> sons[i] -> visit > best_score){
+                best_score = v -> vec -> sons[i] -> wins /  v -> vec -> sons[i] -> visit;
+                best_idx = i;
+            }
+        }
+    }
+    //uct
+    else if(SELECT == 1){
+        double best_score = 0;
+        for(int i = 0; i < v -> vec -> size; i++){
+            if(uct(v -> vec -> sons[i]) > best_score){
+                best_score = uct(v -> vec -> sons[i]);
+                best_idx = i;
+            }
+        }
+    }
+    else if(SELECT == 2){
+        int best_score = 0;
+        for(int i = 0; i < v -> vec -> size; i++){
+            if(v -> vec -> sons[i] -> visit > best_score){
+                best_score = v -> vec -> sons[i] -> visit;
+                best_idx = i;
+            }
         }
     }
 

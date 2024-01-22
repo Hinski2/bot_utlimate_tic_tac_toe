@@ -5,6 +5,7 @@
 
 #include "game_bot.h"
 #include "bot_utils.h"
+#include "bot_main.h"
 
 FILE *file;
 void dodaj(){
@@ -36,8 +37,8 @@ void dodaj(){
     while(player[1]  == player[0]) player[1] = rand() % 3 + 4;
 
     //!!!!!!!!!!!!!!!!!!!
-    player[0] = 4;
-    player[1] = 4;
+    player[0] = 6;
+    player[1] = 3;
     //!!!!!!!!!!!!!!!!!!!
 
     //zabawa botem
@@ -52,7 +53,7 @@ void dodaj(){
         }
 
         if(next_czesc == -1){
-            fprintf(file, "%d;%d;%d\n", player[0], player[1], 2);
+             fprintf(file, "%d;%d;%d\n", player[0], player[1], 2);
             return;
         }
 
@@ -80,14 +81,27 @@ void dodaj(){
     deallocate(nad_zwyciestwa, 3);
 }
 
-int main(){
+int DIFF = 0, WINS = 2, SELECT = 2;
+double SQRT = 0.8;
+
+int main(int argc, char *argv[]){
     file = fopen("dane.csv", "w");
+    if(argc == 5){
+        DIFF = atoi(argv[1]);
+        SQRT = atof(argv[2]);
+        WINS = atoi(argv[3]);
+        SELECT = atoi(argv[4]);
+    }
 
     //tworzenie planszy
     srand(time(NULL));
-    for(int i = 0; i < 1; i++)
+    for(int i = 0; i < 50; i++){ //!
         dodaj();
+        printf("%d\n", i);
+    }
     
     fclose(file);
     return 0;
 }
+
+//gcc -pthread -std=c11 *.c -lm

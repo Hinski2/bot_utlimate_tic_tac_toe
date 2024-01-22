@@ -29,13 +29,14 @@
 */
 #include "game_bot.h"
 #include "bot_utils.h"
+#include "bot_main.h"
 
-#define iteracje_normal 500
-#define iteracje_hard 50000
-#define iteracje_impopable 5000000
-#define thread_no 16
+#define iteracje_normal 2500
+#define iteracje_hard 25000
+#define iteracje_impopable 2500000
+#define thread_no 8
 
-pthread_mutex_t lock_cnt;
+pthread_mutex_t lock_cnt, stop_malloc;
 int liczba_iteracji, cel_liczby_iteracji;
 
 int bot(char **plansza, char gracz, int czesc, int tryb){
@@ -53,8 +54,17 @@ int bot(char **plansza, char gracz, int czesc, int tryb){
         puts("Podałeś zły tryb wojowniku");
         exit(EXIT_FAILURE);
     }
+    
+    //inicjalizacja mutexa na malloca
+    if(pthread_mutex_init(&stop_malloc, NULL) != 0){
+        puts("błąd inicjalizaji mutexa");
+        exit(EXIT_FAILURE);
+    }
 
     int ans = (*boty[tryb])(plansza, gracz, czesc);
+
+    //deaktywacja mutexa na malloca
+    pthread_mutex_destroy(&stop_malloc);
     return ans;
 }
 
@@ -91,7 +101,7 @@ void *watek(void *ARG){
 
         //updatuje informacje dla wierzchołków od syna do korzenia (v)
         unselect(new_selected, arg -> plansza, wynik, arg -> nad_zwyciestwa);
-        free(selected);
+        free(selected); 
         //koniec iteracji
     }
 }
